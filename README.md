@@ -291,6 +291,12 @@ terraform {
 #
 ## How to Apply the Project
 
+Note: First you need to know that this configuration is trying to access a storage account named "mehmetosanmazacc" in a resource group named "MehmetOsanmazRG".
+
+To resolve this issue, you will need to either create the missing resource group and storage account, or update the Terraform configuration to use the correct names for the existing resources. If the resources do not exist, you can create them using the Azure Portal or the Azure CLI. If the resources already exist, you can use the az group list and az storage account list commands to view the names of your resource groups and storage accounts, and then update the Terraform configuration to use the correct names.
+
+Once you have resolved the issue with the missing resource group and storage account, you should be able to run the terraform apply command without encountering this error.
+
 ## 1. 'terraform init' command
 
 The terraform init command is used to initialize a Terraform configuration. This is the first command that should be run after writing a new Terraform configuration or cloning an existing one from version control.
