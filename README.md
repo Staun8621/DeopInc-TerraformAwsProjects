@@ -1,6 +1,6 @@
 # Name of the Project: Terraform Project in Azure
 
-Description of the Project: This is a Terraform project that can be used to create an Azure virtual machine, virtual network, storage account, and load balancer.
+Description of the Project: This is a Terraform project that can be used to create an Azure virtual machine, virtual network, storage account, and load balancer into your existing resource group. Then, it creates and uploads the tfstate file of your deployment to the existing container in your storage account on Azure without creating it in your local.
 
 ## Virtual-machines.tf
 
@@ -9,8 +9,8 @@ The 'virtual-machines.tf' file creates an availability set for the virtual machi
 ```bash
 resource "azurerm_availability_set" "frontend" {
   name                         = "tf-avail-set"
-  location                     = azurerm_resource_group.terraform_sample.location
-  resource_group_name          = azurerm_resource_group.terraform_sample.name
+  location                     = var.arm_region
+  resource_group_name          = var.arm_resource_group_name
   platform_fault_domain_count  = 3
   platform_update_domain_count = 20
   managed                      = true
@@ -29,8 +29,8 @@ resource "azurerm_storage_container" "frontend" {
 resource "azurerm_network_interface" "frontend" {
   count               = var.arm_frontend_instances
   name                = "tf-interface-${count.index}"
-  location            = azurerm_resource_group.terraform_sample.location
-  resource_group_name = azurerm_resource_group.terraform_sample.name
+  location            = var.arm_region
+  resource_group_name = var.arm_resource_group_name
 
   ip_configuration {
     name                          = "tf-ip-${count.index}"
@@ -42,8 +42,8 @@ resource "azurerm_network_interface" "frontend" {
 resource "azurerm_virtual_machine" "frontend" {
   count                 = var.arm_frontend_instances
   name                  = "tf-instance-${count.index}"
-  location              = azurerm_resource_group.terraform_sample.location
-  resource_group_name   = azurerm_resource_group.terraform_sample.name
+  location              = var.arm_region
+  resource_group_name   = var.arm_resource_group_name
   network_interface_ids = ["${element(azurerm_network_interface.frontend.*.id, count.index)}"]
   vm_size               = "Standard_DS1_v2"
   availability_set_id   = azurerm_availability_set.frontend.id
@@ -92,35 +92,35 @@ resource "azurerm_virtual_machine" "frontend" {
 The 'vnet-subnet.tf' file creates a resource group, a virtual network, and three subnets, one for the frontend, one for the backend, and one for the DMZ.
 
 ```bash
-resource "azurerm_resource_group" "terraform_sample" {
-    name     = "terraform-sample"
-    location = "${var.arm_region}"
-}
+# resource "azurerm_resource_group" "terraform_sample" {
+#     name     = "terraform-sample"
+#     location = "${var.arm_region}"
+# }
 
 resource "azurerm_virtual_network" "my_vn" {
   name                = "tf-vnet"
   address_space       = ["10.0.0.0/16"]
-  location            = "${azurerm_resource_group.terraform_sample.location}"
-  resource_group_name = "${azurerm_resource_group.terraform_sample.name}"
+  location            = "${var.arm_region}"
+  resource_group_name = "${var.arm_resource_group_name}"
 }
 
 resource "azurerm_subnet" "my_subnet_frontend" {
   name                 = "frontend"
-  resource_group_name  = "${azurerm_resource_group.terraform_sample.name}"
+  resource_group_name  = "${var.arm_resource_group_name}"
   virtual_network_name = "${azurerm_virtual_network.my_vn.name}"
   address_prefixes      = ["10.0.1.0/24"]
 }
 
 resource "azurerm_subnet" "my_subnet_backend" {
   name                 = "backend"
-  resource_group_name  = "${azurerm_resource_group.terraform_sample.name}"
+  resource_group_name  = "${var.arm_resource_group_name}"
   virtual_network_name = "${azurerm_virtual_network.my_vn.name}"
   address_prefixes      = ["10.0.2.0/24"]
 }
 
 resource "azurerm_subnet" "my_subnet_dmz" {
   name                 = "dmz"
-  resource_group_name  = "${azurerm_resource_group.terraform_sample.name}"
+  resource_group_name  = "${var.arm_resource_group_name}"
   virtual_network_name = "${azurerm_virtual_network.my_vn.name}"
   address_prefixes      = ["10.0.3.0/24"]
 }
@@ -137,12 +137,17 @@ variable "arm_region" {
 }
 variable "arm_vm_admin_password" {
   description = "Passwords for the root user in VMs."
-  default     = "easyy.321-" # This should be hidden and passed as a variable, doing this just for training purpose
+  default     = "easyy.321-" # This should be hidden and passed as variable, doing this just for training purpose
 }
 
 variable "arm_frontend_instances" {
   description = "Number of front instances"
   default     = 2
+}
+
+variable "arm_resource_group_name" {
+  description = "The name of the resource group to create."
+  default     = "MehmetOsanmazRG"
 }
 
 ```
@@ -153,12 +158,13 @@ The 'storage-account.tf' file creates a storage account.
 
 ```bash
 resource "azurerm_storage_account" "frontend" {
-    name                     = "tf321123mehmetostorageaccount"
-    resource_group_name      = "${azurerm_resource_group.terraform_sample.name}"
-    location                 = "${azurerm_resource_group.terraform_sample.location}"
+    name                     = "tf321123mehmetostracc"
+    resource_group_name      = "${var.arm_resource_group_name}"
+    location                 = "${var.arm_region}"
     account_tier             = "Standard"
     account_replication_type = "LRS"
 }
+
 ```
 
 ## providers.tf
@@ -166,6 +172,8 @@ resource "azurerm_storage_account" "frontend" {
 The 'providers.tf' file sets up the Azure provider and features.
 
 ```bash
+# We strongly recommend using the required_providers block to set the
+# Azure Provider source and version being used
 # We strongly recommend using the required_providers block to set the
 # Azure Provider source and version being used
 terraform {
@@ -181,6 +189,7 @@ terraform {
 provider "azurerm" {
   features {}
 }
+
 ```
 
 ## output.tf
@@ -203,6 +212,7 @@ output "dmz_id" {
 output "load_balancer_ip" {
   value = "${azurerm_public_ip.frontend.ip_address}"
 }
+
 ```
 
 ## load-balancer.tf
@@ -212,15 +222,15 @@ The load-balancer.tf file creates an Azure load balancer, a public IP address, a
 ```bash
 resource "azurerm_public_ip" "frontend" {
     name                         = "tf-public-ip"
-    location                     = "${azurerm_resource_group.terraform_sample.location}"
-    resource_group_name          = "${azurerm_resource_group.terraform_sample.name}"
+    location                     = "${var.arm_region}"
+    resource_group_name          = "${var.arm_resource_group_name}"
     allocation_method            = "Static"
 }
 
 resource "azurerm_lb" "frontend" {
     name                = "tf-lb"
-    location            = "${azurerm_resource_group.terraform_sample.location}"
-    resource_group_name = "${azurerm_resource_group.terraform_sample.name}"
+    location            = "${var.arm_region}"
+    resource_group_name = "${var.arm_resource_group_name}"
     frontend_ip_configuration {
         name                          = "default"
         public_ip_address_id          = "${azurerm_public_ip.frontend.id}"
@@ -241,7 +251,7 @@ resource "azurerm_lb_rule" "port80" {
     loadbalancer_id         = "${azurerm_lb.frontend.id}"
     backend_address_pool_ids = ["${azurerm_lb_backend_address_pool.frontend.id}"]
     probe_id                = "${azurerm_lb_probe.port80.id}"
-    protocol                       = "Http"
+    protocol                       = "Tcp"
     frontend_port                  = 80
     backend_port                   = 80
     frontend_ip_configuration_name = "default"
@@ -250,7 +260,7 @@ resource "azurerm_lb_rule" "port80" {
 resource "azurerm_lb_probe" "port443" {
     name                = "tf-lb-probe-443"
     loadbalancer_id     = "${azurerm_lb.frontend.id}"
-    protocol            = "Https"
+    protocol            = "Http"
     request_path        = "/"
     port                = 443
 }
@@ -260,7 +270,7 @@ resource "azurerm_lb_rule" "port443" {
     loadbalancer_id         = "${azurerm_lb.frontend.id}"
     backend_address_pool_ids = ["${azurerm_lb_backend_address_pool.frontend.id}"]
     probe_id                = "${azurerm_lb_probe.port443.id}"
-    protocol                       = "Https"
+    protocol                       = "Tcp"
     frontend_port                  = 443
     backend_port                   = 443
     frontend_ip_configuration_name = "default"
@@ -270,13 +280,14 @@ resource "azurerm_lb_backend_address_pool" "frontend" {
     name                = "tf-lb-pool"
     loadbalancer_id     = "${azurerm_lb.frontend.id}"
 }
+
 ```
 
 ## backend.tf
 
 backend.tf is defining the configuration for Terraform's Azure Resource Manager (azurerm) backend. The backend is used to store the state of Terraform's managed resources so that Terraform knows what has been created and what changes are necessary.
 
-```bash
+```
 terraform {
     backend "azurerm" {
         storage_account_name = "mehmetosanmazacc" # Use your own unique name here
@@ -285,13 +296,14 @@ terraform {
         resource_group_name  = "MehmetOsanmazRG"         # Use your own resource group name here
     }
 }
+
 ```
 #
 #
 #
 ## How to Apply the Project
 
-Note: First you need to know that this configuration is trying to access a storage account named "mehmetosanmazacc" in a resource group named "MehmetOsanmazRG" and a container named "terraform-sample" in the storage account named "mehmetosanmazacc".
+Note: First you need to know that this configuration is trying to access the container named "terraform-sample" in the storage account named "mehmetosanmazacc" in the resource group named "MehmetOsanmazRG".
 
 To resolve this issue, you will need to either create the missing resource group, storage account, and container or update the Terraform configuration to use the correct names for the existing resources. If the resources do not exist, you can create them using the Azure Portal or the Azure CLI. If the resources already exist, you can use the az group list and az storage account list commands to view the names of your resource groups and storage accounts, and then update the Terraform configuration to use the correct names.
 

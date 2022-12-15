@@ -11,3 +11,8 @@ variable "arm_frontend_instances" {
   description = "Number of front instances"
   default     = 2
 }
+
+variable "arm_resource_group_name" {
+  description = "The name of the resource group to create."
+  default     = "MehmetOsanmazRG"
+}

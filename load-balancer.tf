@@ -1,14 +1,14 @@
 resource "azurerm_public_ip" "frontend" {
     name                         = "tf-public-ip"
-    location                     = "${azurerm_resource_group.terraform_sample.location}"
-    resource_group_name          = "${azurerm_resource_group.terraform_sample.name}"
+    location                     = "${var.arm_region}"
+    resource_group_name          = "${var.arm_resource_group_name}"
     allocation_method            = "Static"
 }
 
 resource "azurerm_lb" "frontend" {
     name                = "tf-lb"
-    location            = "${azurerm_resource_group.terraform_sample.location}"
-    resource_group_name = "${azurerm_resource_group.terraform_sample.name}"
+    location            = "${var.arm_region}"
+    resource_group_name = "${var.arm_resource_group_name}"
     frontend_ip_configuration {
         name                          = "default"
         public_ip_address_id          = "${azurerm_public_ip.frontend.id}"
@@ -29,7 +29,7 @@ resource "azurerm_lb_rule" "port80" {
     loadbalancer_id         = "${azurerm_lb.frontend.id}"
     backend_address_pool_ids = ["${azurerm_lb_backend_address_pool.frontend.id}"]
     probe_id                = "${azurerm_lb_probe.port80.id}"
-    protocol                       = "Http"
+    protocol                       = "Tcp"
     frontend_port                  = 80
     backend_port                   = 80
     frontend_ip_configuration_name = "default"
@@ -38,7 +38,7 @@ resource "azurerm_lb_rule" "port80" {
 resource "azurerm_lb_probe" "port443" {
     name                = "tf-lb-probe-443"
     loadbalancer_id     = "${azurerm_lb.frontend.id}"
-    protocol            = "Https"
+    protocol            = "Http"
     request_path        = "/"
     port                = 443
 }
@@ -48,7 +48,7 @@ resource "azurerm_lb_rule" "port443" {
     loadbalancer_id         = "${azurerm_lb.frontend.id}"
     backend_address_pool_ids = ["${azurerm_lb_backend_address_pool.frontend.id}"]
     probe_id                = "${azurerm_lb_probe.port443.id}"
-    protocol                       = "Https"
+    protocol                       = "Tcp"
     frontend_port                  = 443
     backend_port                   = 443
     frontend_ip_configuration_name = "default"

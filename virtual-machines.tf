@@ -1,7 +1,7 @@
 resource "azurerm_availability_set" "frontend" {
   name                         = "tf-avail-set"
-  location                     = azurerm_resource_group.terraform_sample.location
-  resource_group_name          = azurerm_resource_group.terraform_sample.name
+  location                     = var.arm_region
+  resource_group_name          = var.arm_resource_group_name
   platform_fault_domain_count  = 3
   platform_update_domain_count = 20
   managed                      = true
@@ -20,8 +20,8 @@ resource "azurerm_storage_container" "frontend" {
 resource "azurerm_network_interface" "frontend" {
   count               = var.arm_frontend_instances
   name                = "tf-interface-${count.index}"
-  location            = azurerm_resource_group.terraform_sample.location
-  resource_group_name = azurerm_resource_group.terraform_sample.name
+  location            = var.arm_region
+  resource_group_name = var.arm_resource_group_name
 
   ip_configuration {
     name                          = "tf-ip-${count.index}"
@@ -33,8 +33,8 @@ resource "azurerm_network_interface" "frontend" {
 resource "azurerm_virtual_machine" "frontend" {
   count                 = var.arm_frontend_instances
   name                  = "tf-instance-${count.index}"
-  location              = azurerm_resource_group.terraform_sample.location
-  resource_group_name   = azurerm_resource_group.terraform_sample.name
+  location              = var.arm_region
+  resource_group_name   = var.arm_resource_group_name
   network_interface_ids = ["${element(azurerm_network_interface.frontend.*.id, count.index)}"]
   vm_size               = "Standard_DS1_v2"
   availability_set_id   = azurerm_availability_set.frontend.id
