@@ -7,6 +7,8 @@ Description of the Project: This is a Terraform project that can be used to crea
 The 'virtual-machines.tf' file creates an availability set for the virtual machines, a storage container for each instance, a network interface for each instance, and a virtual machine for each instance. The virtual machine includes storage for an OS disk, storage for an optional data disk, an OS profile, an OS profile Linux configuration, and flags to delete the OS and data disks on termination.
 
 ```bash
+
+# create an availability set
 resource "azurerm_availability_set" "frontend" {
   name                         = "tf-avail-set"
   location                     = var.arm_region
@@ -19,6 +21,7 @@ resource "azurerm_availability_set" "frontend" {
   }
 }
 
+# create a container for the storage account
 resource "azurerm_storage_container" "frontend" {
   count                 = var.arm_frontend_instances
   name                  = "tf-storage-container-${count.index}"
@@ -26,12 +29,14 @@ resource "azurerm_storage_container" "frontend" {
   container_access_type = "private"
 }
 
+# create a network interface frontend
 resource "azurerm_network_interface" "frontend" {
   count               = var.arm_frontend_instances
   name                = "tf-interface-${count.index}"
   location            = var.arm_region
   resource_group_name = var.arm_resource_group_name
 
+# ip_configuration {
   ip_configuration {
     name                          = "tf-ip-${count.index}"
     subnet_id                     = azurerm_subnet.my_subnet_frontend.id
@@ -39,6 +44,7 @@ resource "azurerm_network_interface" "frontend" {
   }
 }
 
+# create a virtual machine frontend
 resource "azurerm_virtual_machine" "frontend" {
   count                 = var.arm_frontend_instances
   name                  = "tf-instance-${count.index}"
@@ -48,6 +54,7 @@ resource "azurerm_virtual_machine" "frontend" {
   vm_size               = "Standard_DS1_v2"
   availability_set_id   = azurerm_availability_set.frontend.id
 
+# virtual machine image
   storage_image_reference {
     publisher = "Canonical"
     offer     = "UbuntuServer"
@@ -55,6 +62,7 @@ resource "azurerm_virtual_machine" "frontend" {
     version   = "latest"
   }
 
+# vurtual machine OS disk
   storage_os_disk {
     name              = "tf-osdisk-${count.index}"
     caching           = "ReadWrite"
@@ -74,17 +82,21 @@ resource "azurerm_virtual_machine" "frontend" {
   delete_os_disk_on_termination    = true
   delete_data_disks_on_termination = true
 
+# virtual machine OS profile
   os_profile {
     computer_name  = "tf-instance-${count.index}"
     admin_username = "demo"
     admin_password = var.arm_vm_admin_password
   }
 
+# virtual machine OS profile Linux config
   os_profile_linux_config {
     disable_password_authentication = false
   }
 
 }
+
+
 ```
 
 ## vnet-subnet.tf
@@ -92,11 +104,8 @@ resource "azurerm_virtual_machine" "frontend" {
 The 'vnet-subnet.tf' file creates a resource group, a virtual network, and three subnets, one for the frontend, one for the backend, and one for the DMZ.
 
 ```bash
-# resource "azurerm_resource_group" "terraform_sample" {
-#     name     = "terraform-sample"
-#     location = "${var.arm_region}"
-# }
 
+# create a virtual network
 resource "azurerm_virtual_network" "my_vn" {
   name                = "tf-vnet"
   address_space       = ["10.0.0.0/16"]
@@ -104,6 +113,7 @@ resource "azurerm_virtual_network" "my_vn" {
   resource_group_name = "${var.arm_resource_group_name}"
 }
 
+# create a subnet frontend
 resource "azurerm_subnet" "my_subnet_frontend" {
   name                 = "frontend"
   resource_group_name  = "${var.arm_resource_group_name}"
@@ -111,6 +121,7 @@ resource "azurerm_subnet" "my_subnet_frontend" {
   address_prefixes      = ["10.0.1.0/24"]
 }
 
+# create a subnet backend
 resource "azurerm_subnet" "my_subnet_backend" {
   name                 = "backend"
   resource_group_name  = "${var.arm_resource_group_name}"
@@ -118,12 +129,15 @@ resource "azurerm_subnet" "my_subnet_backend" {
   address_prefixes      = ["10.0.2.0/24"]
 }
 
+# create a subnet dmz
 resource "azurerm_subnet" "my_subnet_dmz" {
   name                 = "dmz"
   resource_group_name  = "${var.arm_resource_group_name}"
   virtual_network_name = "${azurerm_virtual_network.my_vn.name}"
   address_prefixes      = ["10.0.3.0/24"]
 }
+
+
 ```
 
 ## variables.tf
@@ -131,24 +145,31 @@ resource "azurerm_subnet" "my_subnet_dmz" {
 The 'variables.tf' file sets the region to create things in, the password for the root user in the virtual machines, and the number of frontend instances.
 
 ```bash
+
+# assign variable for location of resources
 variable "arm_region" {
   description = "The Azure region to create things in."
   default     = "East US"
 }
+
+# assign variable for vm admin password
 variable "arm_vm_admin_password" {
   description = "Passwords for the root user in VMs."
   default     = "easyy.321-" # This should be hidden and passed as variable, doing this just for training purpose
 }
 
+# assign variable for number of frontend instances
 variable "arm_frontend_instances" {
   description = "Number of front instances"
   default     = 2
 }
 
+# assign variable for resource group name
 variable "arm_resource_group_name" {
   description = "The name of the resource group to create."
   default     = "MehmetOsanmazRG"
 }
+
 
 ```
 
@@ -157,6 +178,8 @@ variable "arm_resource_group_name" {
 The 'storage-account.tf' file creates a storage account.
 
 ```bash
+
+# create a storage account
 resource "azurerm_storage_account" "frontend" {
     name                     = "tf321123mehmetostracc"
     resource_group_name      = "${var.arm_resource_group_name}"
@@ -172,8 +195,7 @@ resource "azurerm_storage_account" "frontend" {
 The 'providers.tf' file sets up the Azure provider and features.
 
 ```bash
-# We strongly recommend using the required_providers block to set the
-# Azure Provider source and version being used
+
 # We strongly recommend using the required_providers block to set the
 # Azure Provider source and version being used
 terraform {
@@ -197,18 +219,23 @@ provider "azurerm" {
 The 'output.tf' file outputs for an Azure Resource Manager (ARM) Terraform configuration. The outputs are the IDs of the frontend, backend, and DMZ subnets, as well as the IP address of the frontend public IP. These outputs can be used to display or reference important information about the resources created by the Terraform configuration. For example, you could use the output values in other parts of your Terraform configuration, or you could access the output values after running terraform apply to obtain the IDs or IP address of the resources.
 
 ```bash
+
+# output frontend_id
 output "frontend_id" {
   value = "${azurerm_subnet.my_subnet_frontend.id}"
 }
 
+# output backend_id
 output "backend_id" {
   value = "${azurerm_subnet.my_subnet_backend.id}"
 }
 
+# output dmz_id
 output "dmz_id" {
   value = "${azurerm_subnet.my_subnet_dmz.id}"
 }
 
+# output load_balancer_ip
 output "load_balancer_ip" {
   value = "${azurerm_public_ip.frontend.ip_address}"
 }
@@ -220,6 +247,8 @@ output "load_balancer_ip" {
 The load-balancer.tf file creates an Azure load balancer, a public IP address, and associated resources, using the Azure Resource Manager (ARM) provider for Terraform. The load balancer will be created in the specified resource group and location, and will be configured to use the specified public IP address. The code also defines two probes and two rules for the load balancer, on ports 80 and 443. The probes will be used to monitor the health of the backend instances, and the rules will define how traffic is distributed to the backend instances. Additionally, a backend address pool is defined for the load balancer, which will be used to specify the backend instances that the load balancer should use. This configuration will create the resources necessary to set up a load balancer in Azure, which can be used to distribute incoming traffic across multiple backend instances.
 
 ```bash
+
+# create a public ip
 resource "azurerm_public_ip" "frontend" {
     name                         = "tf-public-ip"
     location                     = "${var.arm_region}"
@@ -227,6 +256,7 @@ resource "azurerm_public_ip" "frontend" {
     allocation_method            = "Static"
 }
 
+# create a load balancer
 resource "azurerm_lb" "frontend" {
     name                = "tf-lb"
     location            = "${var.arm_region}"
@@ -238,6 +268,7 @@ resource "azurerm_lb" "frontend" {
     }
 }
 
+# create a load balancer probe PORT 80
 resource "azurerm_lb_probe" "port80" {
     name                = "tf-lb-probe-80"
     loadbalancer_id     = "${azurerm_lb.frontend.id}"
@@ -246,6 +277,7 @@ resource "azurerm_lb_probe" "port80" {
     port                = 80
 }
 
+# create a load balancer rule PORT 80
 resource "azurerm_lb_rule" "port80" {
     name                    = "tf-lb-rule-80"
     loadbalancer_id         = "${azurerm_lb.frontend.id}"
@@ -257,6 +289,7 @@ resource "azurerm_lb_rule" "port80" {
     frontend_ip_configuration_name = "default"
 }
 
+# load balancer probe PORT 443
 resource "azurerm_lb_probe" "port443" {
     name                = "tf-lb-probe-443"
     loadbalancer_id     = "${azurerm_lb.frontend.id}"
@@ -265,6 +298,7 @@ resource "azurerm_lb_probe" "port443" {
     port                = 443
 }
 
+# load balancer rule PORT 443
 resource "azurerm_lb_rule" "port443" {
     name                    = "tf-lb-rule-443"  
     loadbalancer_id         = "${azurerm_lb.frontend.id}"
@@ -276,6 +310,7 @@ resource "azurerm_lb_rule" "port443" {
     frontend_ip_configuration_name = "default"
 }
 
+# load balancer backend address pool
 resource "azurerm_lb_backend_address_pool" "frontend" {
     name                = "tf-lb-pool"
     loadbalancer_id     = "${azurerm_lb.frontend.id}"
@@ -287,7 +322,9 @@ resource "azurerm_lb_backend_address_pool" "frontend" {
 
 backend.tf is defining the configuration for Terraform's Azure Resource Manager (azurerm) backend. The backend is used to store the state of Terraform's managed resources so that Terraform knows what has been created and what changes are necessary.
 
-```
+```bash
+
+# backend.tf file is used to store the state file in Azure Storage Account
 terraform {
     backend "azurerm" {
         storage_account_name = "mehmetosanmazacc" # Use your own unique name here

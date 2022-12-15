@@ -1,3 +1,4 @@
+# backend.tf file is used to store the state file in Azure Storage Account
 terraform {
     backend "azurerm" {
         storage_account_name = "mehmetosanmazacc" # Use your own unique name here

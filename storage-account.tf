@@ -1,3 +1,4 @@
+# create a storage account
 resource "azurerm_storage_account" "frontend" {
     name                     = "tf321123mehmetostracc"
     resource_group_name      = "${var.arm_resource_group_name}"
