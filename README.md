@@ -1,6 +1,6 @@
 # Name of the Project: Terraform Project in Azure
 
-Description of the Project: This is a Terraform project that can be used to create an Azure virtual machine, virtual network, storage account, and load balancer into your existing resource group. Then, it creates and uploads the tfstate file of your deployment to the existing container in your storage account on Azure without creating it in your local.
+Description of the Project: This is a Terraform project that can be used to create an Azure virtual machine, virtual network, storage account, and load balancer into your existing resource group. Then, it creates and uploads the tfstate file of the deployment to the existing container in your storage account on Azure without creating it in your local repository.
 
 ## Virtual-machines.tf
 
