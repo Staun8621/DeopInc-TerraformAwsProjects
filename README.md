@@ -4,7 +4,7 @@ Description of the Project: This is a Terraform project that can be used to crea
 
 ## Virtual-machines.tf
 
-The 'virtual-machines.tf' file creates an availability set for the virtual machines, a storage container for each instance, a network interface for each instance, and a virtual machine for each instance. The virtual machine includes storage for an OS disk, storage for an optional data disk, an OS profile, an OS profile Linux configuration, and flags to delete the OS and data disks on termination.
+The 'virtual-machines.tf' file creates an availability set for the virtual-machines, a storage container for each (frontend and backend) instance, a network interface for each (frontend and backend) instance, and a virtual-machine for each (frontend and backend) instance. The virtual machine includes storage for an OS disk, storage for an optional data disk, an OS profile, an OS profile Linux configuration, and flags to delete the OS and data disks on termination.
 
 ```bash
 
